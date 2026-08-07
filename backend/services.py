@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from  contextlib import contextmanager
 import time
-from .settings import settings
+from settings import settings
 @contextmanager
 def log_file():
     """上下文管理器：安全呢打开日志文件，自动关闭"""
