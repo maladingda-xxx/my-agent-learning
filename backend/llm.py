@@ -81,4 +81,37 @@ async def call_llm_with_mood(user_message:str, mood:str, model_name:str = None) 
 
     prompt = mood_prompt.get(mood,SYSTEM_PROMPT)
     return await call_llm(user_message,system_prompt=prompt)
-  
+
+async def call_llm_multi_turn(
+        message:list[dict],
+        system_prompt:str=SYSTEM_PROMPT,
+        temperature:float=None,
+        max_tokens:int=None,
+    ) -> str:
+    cfg = get_settings()
+    temp = temperature if temperature is not None else cfg.temperature
+    max_tok = max_tokens if max_tokens is not None else cfg.max_tokens
+    if not cfg.deepseek_api_key or cfg.deepseek_api_key == "sk-placeholder":
+        return "错误：请在.env中设置有效的DEEPSEEK_API_KEY"
+
+    client = _create_client(cfg)
+
+    full_messages = [{"role":"system","content":system_prompt}] + message
+    try:
+        response = await client.chat.completions.create(
+            model=cfg.model_name,
+            messages=full_messages,
+            temperature=temp,
+            max_tokens=max_tok,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        error_msg = str(e)
+        if "401" in error_msg or "AuthenticationError" in error_msg:
+            return "错误：API Key无效"
+        elif "429" in error_msg or "Rate Limit" in error_msg:
+            return "错误：请求太频繁"
+        elif "timeout" in error_msg:
+            return "错误：请求超时"
+        else:
+            return f"错误：API 调用失败——{error_msg}"

@@ -5,7 +5,7 @@ import time
 from settings import settings
 @contextmanager
 def log_file():
-    """上下文管理器：安全呢打开日志文件，自动关闭"""
+    """上下文管理器：安全地打开日志文件，自动关闭"""
     os.makedirs(os.path.dirname(settings.log_path),exist_ok=True)
     f = open(settings.log_path,"a",encoding="utf-8")
     try:
@@ -14,13 +14,13 @@ def log_file():
         f.close()
 
 
-def log_chat(message:str,reply:str):
+def log_chat(message:str,reply:str,session_id:str):
     """使用上下文管理器写日志"""
     now = datetime.now().isoformat()
     with log_file() as f:
        
-        f.write(f"[{now}] User: {message}\n")
-        f.write(f"[{now}] AI: {reply}\n")
+        f.write(f"[{now}] SESSION={session_id} User: {message}\n")
+        f.write(f"[{now}] SESSION={session_id} ASSISTANT: {reply}\n")
         f.write("-"*50+"\n")
 def read_recent_logs(n:int = 10):
     """读取最近n条对话记录"""
