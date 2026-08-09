@@ -7,6 +7,7 @@ from settings import Settings
 from llm import call_llm_with_mood ,call_llm_multi_turn
 from session_store import get_history,add_to_history,clear_history
 
+
 # ---------- 模型 ----------
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
@@ -28,6 +29,8 @@ class ChatResponse(BaseModel):
 
 # ---------- FastAPI ----------
 app = FastAPI(title="AI-Agent-Learning API", version="0.4.0")
+from upload import router as upload_router
+app.include_router(upload_router)
 
 # ---------- 路由 ----------
 @app.post("/chat", response_model=ChatResponse)
