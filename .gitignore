@@ -1,3 +1,18 @@
+# 环境配置
 .env
+
+# 工具配置
 .claude/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 运行时数据（向量库 / 上传文件 / chunks / 日志）
+backend/data/
+backend/logs/
+data/
+logs/
+
+# 临时学习文件
 test.py
