@@ -31,8 +31,10 @@ class ChatResponse(BaseModel):
 app = FastAPI(title="AI-Agent-Learning API", version="0.4.0")
 from upload import router as upload_router
 from retrieve import router as retrieve_router
+from rag_router import router as rag_router
 app.include_router(upload_router)
 app.include_router(retrieve_router)
+app.include_router(rag_router)
 
 # ---------- 路由 ----------
 @app.post("/chat", response_model=ChatResponse)
