@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field, field_validator
 import time
-from services import log_chat, read_recent_logs
+from services import log_chat
 from dependencies import get_settings
 from settings import Settings
-from llm import call_llm_with_mood ,call_llm_multi_turn
+from llm import call_llm_multi_turn
 from session_store import get_history,add_to_history,clear_history
 
 
@@ -56,8 +56,6 @@ async def chat(
     elif request.mood == "happy":
             system_prompt += "\n请用热情积极的语气回答，但保持内容准确。"
     
-    elapsed = time.time() - start
-
     answer = await call_llm_multi_turn(
         message=history,
         system_prompt=system_prompt,
@@ -68,7 +66,7 @@ async def chat(
     add_to_history(request.session_id,"user",request.message)
     add_to_history(request.session_id,"assistant",answer)
     # 异步记录日志（文件写入仍是同步，暂时接受）
-    log_chat(request.message, answer,session_id)
+    log_chat(request.message, answer, request.session_id)
     
     return ChatResponse(
         reply=answer,
