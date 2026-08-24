@@ -7,6 +7,7 @@ from settings import Settings
 from llm import call_llm_multi_turn
 from session_store import get_history,add_to_history,clear_history
 from retrieve import retrieve_relevant_chunks_advanced
+from retrieve import retrieve_relevant_chunks_hybrid
 
 # ---------- 模型 ----------
 class ChatRequest(BaseModel):
@@ -94,6 +95,14 @@ def health():
 @app.post("/retrieve_advanced")
 async def retrieve_advanced(req: RetrieveRequest):
     results = await retrieve_relevant_chunks_advanced(req.question, req.top_k)
+    return {
+        "question": req.question,
+        "results": results
+    }
+
+@app.post("/retrieve_hybrid")
+async def retrieve_hybrid(req: RetrieveRequest):
+    results = await retrieve_relevant_chunks_hybrid(req.question, req.top_k)
     return {
         "question": req.question,
         "results": results

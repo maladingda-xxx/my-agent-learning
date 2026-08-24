@@ -1,0 +1,13 @@
+# backend 精简依赖清单（从根目录全量 requirements.txt 提炼）
+# 安装：在 backend 目录执行  pip install -r requirements.txt
+
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+pydantic==2.13.4
+pydantic-settings==2.14.0
+openai==2.32.0
+chromadb==1.5.9
+PyMuPDF
+httpx==0.28.1
+rank-bm25
+python-multipart==0.0.29

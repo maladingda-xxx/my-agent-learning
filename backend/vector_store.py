@@ -57,3 +57,14 @@ def query_similar(query_embedding: list[float], top_k: int = 3) -> list[dict]:
                 "distance": results["distances"][0][i] if results["distances"] else None,
             })
     return output
+
+def get_all_documents() -> tuple[list[str], list[str], list[dict]]:
+    """
+    获取集合中所有文档的文本、id 和 metadata。
+    返回: (texts, ids, metadatas)
+    """
+    data = collection.get()
+    texts = data.get("documents", [])
+    ids = data.get("ids", [])
+    metadatas = data.get("metadatas", [])
+    return texts, ids, metadatas

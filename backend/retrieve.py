@@ -3,6 +3,7 @@ from reranker import rerank_chunks
 from embedding import embed_text
 from vector_store import query_similar
 from query_rewriter import rewrite_queries
+from hybrid_retriever import hybrid_retrieve
 
 router = APIRouter(prefix="/retrieve", tags=["retrieve"])
 
@@ -49,3 +50,7 @@ async def retrieve_relevant_chunks_advanced(question: str, top_k: int = 3) -> li
     reranked = await rerank_chunks(question, candidates)
     # 4. 返回前 top_k 个
     return reranked[:top_k]
+
+async def retrieve_relevant_chunks_hybrid(question: str, top_k: int = 3) -> list[dict]:
+    """混合检索接口"""
+    return await hybrid_retrieve(question, top_k)
