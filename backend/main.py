@@ -6,7 +6,7 @@ from dependencies import get_settings
 from settings import Settings
 from llm import call_llm_multi_turn
 from session_store import get_history,add_to_history,clear_history
-
+from retrieve import retrieve_relevant_chunks_advanced
 
 # ---------- 模型 ----------
 class ChatRequest(BaseModel):
@@ -27,6 +27,11 @@ class ChatResponse(BaseModel):
     timestamp: float
 
 
+class RetrieveRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=2000)
+    top_k: int = Field(default=3, ge=1, le=10)
+
+
 # ---------- FastAPI ----------
 app = FastAPI(title="AI-Agent-Learning API", version="0.4.0")
 from upload import router as upload_router
@@ -45,19 +50,19 @@ async def chat(
     start = time.time()
 
     history = get_history(request.session_id)
-    history.append({"role":"user","content":request.message})
+    messages = history + [{"role":"user","content":request.message}]
     system_prompt = """你是一个严谨且知识渊博的AI助手。
     你的回答应该准确，简洁，有条理。
     如果用户问的问题你不确定，请明确回答“我不确定”，不要编造。
     """
 
     if request.mood == "sad":
-            system_prompt += "\n请用温和共情的语气回答，但保持内容准确。"
+        system_prompt += "\n请用温和共情的语气回答，但保持内容准确。"
     elif request.mood == "happy":
-            system_prompt += "\n请用热情积极的语气回答，但保持内容准确。"
+        system_prompt += "\n请用热情积极的语气回答，但保持内容准确。"
     
     answer = await call_llm_multi_turn(
-        message=history,
+        message=messages,
         system_prompt=system_prompt,
     )
 
@@ -85,3 +90,11 @@ async def history(session_id:str="default"):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.post("/retrieve_advanced")
+async def retrieve_advanced(req: RetrieveRequest):
+    results = await retrieve_relevant_chunks_advanced(req.question, req.top_k)
+    return {
+        "question": req.question,
+        "results": results
+    }

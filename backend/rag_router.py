@@ -51,12 +51,12 @@ async def chat_rag(
 
     # 获取历史并追加当前消息
     history = get_history(request.session_id)
-    history.append({"role": "user", "content": request.message})
+    messages = history + [{"role": "user", "content": request.message}]
 
     # RAG 编排
     answer, sources, empty_kb = await rag_chat(
         message=request.message,
-        history=history,
+        history=messages,
         top_k=request.top_k,
     )
 

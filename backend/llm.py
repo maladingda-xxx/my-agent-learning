@@ -1,6 +1,7 @@
 """LLM 调用模块 —— 封装对Deepseek API的所有交互"""
 
 import asyncio
+import json
 from openai import AsyncOpenAI
 from settings import settings
 from dependencies import get_settings
@@ -115,4 +116,37 @@ async def call_llm_multi_turn(
             return "错误：请求超时"
         else:
             return f"错误：API 调用失败——{error_msg}"
+
+
+async def call_llm_json(
+        user_message: str,
+        system_prompt: str = SYSTEM_PROMPT,
+        temperature: float = None,
+        max_tokens: int = None,
+):
+    """调用 LLM 并尝试把返回内容解析为 JSON。
+
+    返回：
+        成功解析时返回对应的 dict/list；
+        解析失败时返回 {"error": "..."}，由调用方自行降级处理。
+    """
+    text = await call_llm(
+        user_message=user_message,
+        system_prompt=system_prompt,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+
+    cleaned = text.strip()
+    # 容错：去掉模型可能包裹的 markdown 代码块（```json ... ```）
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        if cleaned.lower().startswith("json"):
+            cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+
+    try:
+        return json.loads(cleaned)
+    except (json.JSONDecodeError, TypeError):
+        return {"error": f"JSON 解析失败: {text[:200]}"}
         
