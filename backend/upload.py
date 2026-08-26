@@ -4,14 +4,15 @@ import shutil
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 
-from documents import load_document, split_documents, save_chunks_to_json
-from embedding import embed_documents
-from vector_store import add_documents
+from .settings import DATA_DIR
+from .documents import load_document, split_documents, save_chunks_to_json
+from .embedding import embed_documents
+from .vector_store import add_documents
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
-UPLOAD_DIR = Path("data/uploads")
-CHUNKS_DIR = Path("data/chunks")
+UPLOAD_DIR = DATA_DIR / "uploads"
+CHUNKS_DIR = DATA_DIR / "chunks"
 
 
 @router.post("/")

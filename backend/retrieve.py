@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query
-from reranker import rerank_chunks
-from embedding import embed_text
-from vector_store import query_similar
-from query_rewriter import rewrite_queries
-from hybrid_retriever import hybrid_retrieve
+from .reranker import rerank_chunks
+from .embedding import embed_text
+from .vector_store import query_similar
+from .query_rewriter import rewrite_queries
+from .hybrid_retriever import hybrid_retrieve
 
 router = APIRouter(prefix="/retrieve", tags=["retrieve"])
 

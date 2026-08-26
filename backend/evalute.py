@@ -7,9 +7,11 @@ import json
 import httpx
 from pathlib import Path
 
+from .settings import DATA_DIR
+
 API_BASE = "http://127.0.0.1:8000"
 
-async def evaluate_retrieval(test_cases_path: str = "data/eval_test_cases.json"):
+async def evaluate_retrieval(test_cases_path: str = str(DATA_DIR / "eval_test_cases.json")):
     test_cases = json.loads(Path(test_cases_path).read_text(encoding="utf-8"))
 
     precision_scores = []
@@ -60,7 +62,7 @@ async def evaluate_retrieval(test_cases_path: str = "data/eval_test_cases.json")
     print(f"平均 Recall:    {avg_rec:.2f}")
     print(f"平均 F1:        {avg_f1:.2f}")
 
-async def evaluate_answer_quality(test_cases_path: str = "data/eval_test_cases.json"):
+async def evaluate_answer_quality(test_cases_path: str = str(DATA_DIR / "eval_test_cases.json")):
     """
     评估生成答案的忠实度（简化版）：检查答案中是否包含引用编号，以及是否包含‘资料库中未找到’这类词语。
     更完整的评估需要 LLM-as-a-Judge，我们放到以后。

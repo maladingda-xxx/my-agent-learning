@@ -8,6 +8,7 @@ from llm import call_llm_multi_turn
 from session_store import get_history,add_to_history,clear_history
 from retrieve import retrieve_relevant_chunks_advanced
 from retrieve import retrieve_relevant_chunks_hybrid
+from llm import call_llm_with_tools
 
 # ---------- 模型 ----------
 class ChatRequest(BaseModel):
@@ -107,3 +108,16 @@ async def retrieve_hybrid(req: RetrieveRequest):
         "question": req.question,
         "results": results
     }
+
+class ToolChatRequest(BaseModel):
+    message:str
+    session_id:str = "default"
+class ToolChatResponse(BaseModel):
+    reply:str
+    session_id:str
+@app.post("/chat_with_tools",response_model=ToolChatResponse)
+async def chat_with_tools(req:ToolChatRequest):
+    system_prompt = "你是一个有用的助手，可以调用工具来帮助回答用户的问题"
+    message = [{"role":"user","content":req.message}]
+    answer = await call_llm_with_tools(message,system_prompt=system_prompt)
+    return ToolChatResponse(reply=answer,session_id=req.session_id)

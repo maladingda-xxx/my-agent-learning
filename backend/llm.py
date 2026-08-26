@@ -3,8 +3,9 @@
 import asyncio
 import json
 from openai import AsyncOpenAI
-from settings import settings
-from dependencies import get_settings
+from .settings import settings
+from .dependencies import get_settings
+from .tools import TOOL_DEFINTIONS,execute_tool
 
 SYSTEM_PROMPT = """你是一个知识渊博且严谨的AI助手。
 你的回答应当：
@@ -149,4 +150,43 @@ async def call_llm_json(
         return json.loads(cleaned)
     except (json.JSONDecodeError, TypeError):
         return {"error": f"JSON 解析失败: {text[:200]}"}
-        
+
+async def call_llm_with_tools(
+        messages:list[dict],
+        system_prompt:str = SYSTEM_PROMPT,
+        temperature:float = None,
+        max_tokens:int = None,
+) -> str:
+    cfg = get_settings()
+    temp = temperature if temperature is not None else cfg.temperature
+    max_tok = max_tokens if max_tokens is not None else cfg.max_tokens
+    client = _create_client(cfg)
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    while True:
+        response = await client.chat.completions.create(
+            model=cfg.model_name,
+            messages=full_messages,
+            temperature=temp,
+            max_tokens=max_tok,
+            tools=TOOL_DEFINTIONS,
+            tool_choice="auto",
+        )
+        message = response.choices[0].message
+        full_messages.append(message)
+
+        if not message.tool_calls:
+            return message.content or""
+        for tool_call in message.tool_calls:
+            tool_name = tool_call.function.name
+            try:
+                arguments = json.loads(tool_call.function.arguments)
+            except json.JSONDecodeError:
+                arguments = {}
+            result_str = execute_tool(tool_name,arguments)
+
+            full_messages.append({
+                "role":"tool",
+                "tool_call_id":tool_call.id,
+                "content":result_str,
+            })

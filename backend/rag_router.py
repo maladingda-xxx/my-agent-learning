@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
 import time
 
-from session_store import get_history, add_to_history
-from services import log_chat
-from dependencies import get_settings
-from settings import Settings
-from qa_service import rag_chat
+from .session_store import get_history, add_to_history
+from .services import log_chat
+from .dependencies import get_settings
+from .settings import Settings
+from .qa_service import rag_chat
 
 router = APIRouter(prefix="/chat", tags=["rag"])
 

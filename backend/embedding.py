@@ -1,6 +1,6 @@
 """将文本转换成向量"""
 
-from dependencies import get_settings
+from .dependencies import get_settings
 from openai import AsyncOpenAI
 async def embed_text(text:str) -> list[float]:
     cfg = get_settings()

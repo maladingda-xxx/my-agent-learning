@@ -6,8 +6,10 @@ from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 import os
 
+from .settings import DATA_DIR
+
 # Chroma 数据持久化目录
-CHROMA_DIR = "data/chroma_db"
+CHROMA_DIR = str(DATA_DIR / "chroma_db")
 
 # 初始化 Chroma 客户端（持久化模式）
 chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
