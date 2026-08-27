@@ -1,7 +1,7 @@
 """
 查询改写模块 —— 使用 LLM 生成多个搜索查询
 """
-from .llm import call_llm_json
+from llm import call_llm_json
 
 SYSTEM_PROMPT = """你是一个搜索查询优化专家。
 用户会给你一个自然语言问题，请你生成 {num_queries} 个不同的搜索查询。

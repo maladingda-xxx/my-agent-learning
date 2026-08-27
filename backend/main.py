@@ -9,6 +9,7 @@ from session_store import get_history,add_to_history,clear_history
 from retrieve import retrieve_relevant_chunks_advanced
 from retrieve import retrieve_relevant_chunks_hybrid
 from llm import call_llm_with_tools
+from agent_service import ask_agent
 
 # ---------- 模型 ----------
 class ChatRequest(BaseModel):
@@ -121,3 +122,14 @@ async def chat_with_tools(req:ToolChatRequest):
     message = [{"role":"user","content":req.message}]
     answer = await call_llm_with_tools(message,system_prompt=system_prompt)
     return ToolChatResponse(reply=answer,session_id=req.session_id)
+
+class AgentRequest(BaseModel):
+    question:str
+    session_id:str = "default"
+class AgentResponse(BaseModel):
+    answer:str
+    session_id:str
+@app.post("/agent",response_model=AgentResponse)
+async def agent_endpoint(req:AgentRequest):
+    answer = await ask_agent(req.question,req.session_id)
+    return AgentResponse(answer=answer,session_id=req.session_id)

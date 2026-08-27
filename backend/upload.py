@@ -4,10 +4,10 @@ import shutil
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 
-from .settings import DATA_DIR
-from .documents import load_document, split_documents, save_chunks_to_json
-from .embedding import embed_documents
-from .vector_store import add_documents
+from settings import DATA_DIR
+from documents import load_document, split_documents, save_chunks_to_json
+from embedding import embed_documents
+from vector_store import add_documents
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 

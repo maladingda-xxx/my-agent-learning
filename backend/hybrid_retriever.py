@@ -4,8 +4,8 @@
 import asyncio
 from rank_bm25 import BM25Okapi
 import re
-from .vector_store import get_all_documents, query_similar
-from .embedding import embed_text
+from vector_store import get_all_documents, query_similar
+from embedding import embed_text
 
 def tokenize(text: str) -> list[str]:
     """

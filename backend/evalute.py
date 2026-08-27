@@ -1,13 +1,13 @@
 """
 RAG 系统评测脚本
-用法: python -m backend.evaluate
+用法: python evalute.py
 """
 import asyncio
 import json
 import httpx
 from pathlib import Path
 
-from .settings import DATA_DIR
+from settings import DATA_DIR
 
 API_BASE = "http://127.0.0.1:8000"
 

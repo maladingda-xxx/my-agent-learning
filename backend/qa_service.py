@@ -1,8 +1,8 @@
 """RAG 对话编排模块 —— embed查询 → 检索Chroma → 构建prompt → 调用LLM"""
 
-from .embedding import embed_text
-from .vector_store import query_similar, collection
-from .llm import call_llm_multi_turn
+from embedding import embed_text
+from vector_store import query_similar, collection
+from llm import call_llm_multi_turn
 
 
 RAG_SYSTEM_PROMPT = """你是一个严谨且知识渊博的AI助手。请根据以下从文档中检索到的相关信息回答用户的问题。

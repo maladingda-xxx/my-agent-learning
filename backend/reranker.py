@@ -2,7 +2,7 @@
 重排序模块 —— 使用 LLM 对候选文档块打分排序
 """
 import json
-from .llm import call_llm_json
+from llm import call_llm_json
 
 SYSTEM_PROMPT = """你是一名信息检索评估专家。
 我会给你一个用户问题，以及若干个候选文档块（编号从 0 开始）。

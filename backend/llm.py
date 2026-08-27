@@ -3,9 +3,9 @@
 import asyncio
 import json
 from openai import AsyncOpenAI
-from .settings import settings
-from .dependencies import get_settings
-from .tools import TOOL_DEFINTIONS,execute_tool
+from settings import settings
+from dependencies import get_settings
+from tools import TOOL_DEFINTIONS,execute_tool
 
 SYSTEM_PROMPT = """你是一个知识渊博且严谨的AI助手。
 你的回答应当：

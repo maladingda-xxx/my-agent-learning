@@ -6,7 +6,7 @@ from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 import os
 
-from .settings import DATA_DIR
+from settings import DATA_DIR
 
 # Chroma 数据持久化目录
 CHROMA_DIR = str(DATA_DIR / "chroma_db")

@@ -2,6 +2,7 @@
 
 import json 
 import math
+from langchain_core.tools import tool
 
 def calculate(expression:str) -> str:
     try:
@@ -55,3 +56,23 @@ def execute_tool(name:str,argument:dict) -> str:
         return get_current_time()
     else:
         return f"错误:未知工具{name}"
+
+@tool
+def retrieve_knowledge(question:str) -> str:
+    """检索本地知识库，返回与问题最相关的文档片段，用于回答需要知识库支持的问题。"""
+    import asyncio
+    from retrieve import retrieve_relevant_chunks_advanced
+
+    try:
+        chunks = asyncio.run(retrieve_relevant_chunks_advanced(question,top_k=3))
+    except Exception as e:
+        return f"检索失败:{e}"
+    if not chunks:
+        return "未找到相关文档"
+    formatted = []
+    for i,chunk in enumerate(chunks):
+        src = chunk.get("metadata",{}).get("source","未知")
+        text = chunk.get("document","")
+        formatted.append(f"[{i+1}] 来源:{src}\n{text}")
+    return "\n\n".join(formatted)
+
