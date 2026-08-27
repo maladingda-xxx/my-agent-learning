@@ -76,3 +76,19 @@ def retrieve_knowledge(question:str) -> str:
         formatted.append(f"[{i+1}] 来源:{src}\n{text}")
     return "\n\n".join(formatted)
 
+
+@tool
+def calculate_tool(expression: str) -> str:
+    """计算数学表达式并返回结果。
+
+    Args:
+        expression: 数学表达式，例如 '2+3*4'。
+    """
+    return calculate(expression)
+
+
+@tool
+def get_current_time_tool() -> str:
+    """获取当前系统时间。"""
+    return get_current_time()
+

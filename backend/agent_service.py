@@ -4,7 +4,7 @@ LangChain Agent 服务
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate
-from tools import calculator, get_current_time, retrieve_knowledge
+from tools import calculate_tool, get_current_time_tool, retrieve_knowledge
 from dependencies import get_settings
 
 # 全局 AgentExecutor 实例（懒加载）
@@ -19,14 +19,14 @@ def get_agent_executor():
     cfg = get_settings()
     # 1. 创建 LLM（LangChain 的 ChatOpenAI 兼容 DeepSeek）
     llm = ChatOpenAI(
-        api_key=cfg.openai_api_key,
-        base_url=cfg.openai_api_base,
+        api_key=cfg.deepseek_api_key,
+        base_url=cfg.deepseek_api_base,
         model=cfg.model_name,
         temperature=0.3,
     )
 
     # 2. 工具列表
-    tools = [calculator, get_current_time, retrieve_knowledge]
+    tools = [calculate_tool, get_current_time_tool, retrieve_knowledge]
 
     # 3. Prompt 模板（使用 system 和 human 消息）
     prompt = ChatPromptTemplate.from_messages([
