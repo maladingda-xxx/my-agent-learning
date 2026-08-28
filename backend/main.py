@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 import time
 from services import log_chat
@@ -10,6 +12,7 @@ from retrieve import retrieve_relevant_chunks_advanced
 from retrieve import retrieve_relevant_chunks_hybrid
 from llm import call_llm_with_tools
 from agent_service import ask_agent
+from qa_service import rag_chat_stream
 
 # ---------- 模型 ----------
 class ChatRequest(BaseModel):
@@ -36,7 +39,17 @@ class RetrieveRequest(BaseModel):
 
 
 # ---------- FastAPI ----------
-app = FastAPI(title="AI-Agent-Learning API", version="0.4.0")
+app = FastAPI(title="AI-Agent-Learning API", version="0.5.0")
+
+# CORS —— 允许前端开发服务器访问
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 from upload import router as upload_router
 from retrieve import router as retrieve_router
 from rag_router import router as rag_router
@@ -133,3 +146,32 @@ class AgentResponse(BaseModel):
 async def agent_endpoint(req:AgentRequest):
     answer = await ask_agent(req.question,req.session_id)
     return AgentResponse(answer=answer,session_id=req.session_id)
+
+
+# ---------- SSE 流式对话 ----------
+@app.post("/chat/rag/stream")
+async def chat_rag_stream(request: ChatRequest):
+    """SSE 流式 RAG 对话端点。返回 text/event-stream。"""
+    history = get_history(request.session_id)
+    history_with_current = history + [{"role": "user", "content": request.message}]
+
+    async def event_generator():
+        full_answer = ""
+        async for chunk in rag_chat_stream(request.message, history_with_current):
+            # 第一个 chunk 是 JSON 元数据，用特殊 event 类型发送
+            if chunk.startswith('{"type"'):
+                yield f"event: meta\ndata: {chunk}\n\n"
+            else:
+                full_answer += chunk
+                yield f"data: {chunk}\n\n"
+        # 流结束后发送 done 事件
+        yield "event: done\ndata: [DONE]\n\n"
+        # 存储到会话历史
+        add_to_history(request.session_id, "user", request.message)
+        add_to_history(request.session_id, "assistant", full_answer)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

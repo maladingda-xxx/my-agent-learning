@@ -119,6 +119,40 @@ async def call_llm_multi_turn(
             return f"错误：API 调用失败——{error_msg}"
 
 
+async def call_llm_stream(
+        messages: list[dict],
+        system_prompt: str = SYSTEM_PROMPT,
+        temperature: float = None,
+        max_tokens: int = None,
+):
+    """流式调用 LLM，逐 token yield 文本片段（异步生成器）。"""
+    cfg = get_settings()
+    temp = temperature if temperature is not None else cfg.temperature
+    max_tok = max_tokens if max_tokens is not None else cfg.max_tokens
+
+    if not cfg.deepseek_api_key or cfg.deepseek_api_key == "sk-placeholder":
+        yield "错误：请在.env中设置有效的DEEPSEEK_API_KEY"
+        return
+
+    client = _create_client(cfg)
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    try:
+        stream = await client.chat.completions.create(
+            model=cfg.model_name,
+            messages=full_messages,
+            temperature=temp,
+            max_tokens=max_tok,
+            stream=True,
+        )
+        async for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                yield delta.content
+    except Exception as e:
+        yield f"\n[错误：流式调用失败 - {e}]"
+
+
 async def call_llm_json(
         user_message: str,
         system_prompt: str = SYSTEM_PROMPT,

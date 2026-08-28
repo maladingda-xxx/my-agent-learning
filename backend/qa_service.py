@@ -2,7 +2,7 @@
 
 from embedding import embed_text
 from vector_store import query_similar, collection
-from llm import call_llm_multi_turn
+from llm import call_llm_multi_turn, call_llm_stream
 
 
 RAG_SYSTEM_PROMPT = """你是一个严谨且知识渊博的AI助手。请根据以下从文档中检索到的相关信息回答用户的问题。
@@ -102,3 +102,50 @@ async def rag_chat(
     )
 
     return answer, sources, empty_kb
+
+
+async def rag_chat_stream(
+    message: str,
+    history: list[dict],
+    top_k: int = 3,
+):
+    """
+    RAG 对话的流式版本。
+    先做检索（同步完成），然后流式生成回答。
+
+    yield 的内容:
+        - 首先 yield 一个 JSON 元数据行（sources、empty_kb 信息）
+        - 之后逐 token yield 文本片段
+    """
+    import json as _json
+
+    # 1. 检查知识库是否为空
+    doc_count = collection.count()
+    empty_kb = doc_count == 0
+
+    # 2. 检索相关文档
+    sources = []
+    if not empty_kb:
+        try:
+            query_embedding = await embed_text(message)
+            results = query_similar(query_embedding, top_k)
+            context_text = format_context(results)
+            sources = format_sources(results)
+            system_prompt = RAG_SYSTEM_PROMPT.format(context=context_text)
+        except Exception:
+            system_prompt = FALLBACK_SYSTEM_PROMPT
+            empty_kb = True
+            sources = []
+    else:
+        system_prompt = FALLBACK_SYSTEM_PROMPT
+
+    # 3. 先 yield 元数据（前端据此显示来源信息）
+    meta = {"type": "meta", "sources": sources, "empty_kb": empty_kb}
+    yield _json.dumps(meta, ensure_ascii=False)
+
+    # 4. 流式生成回答
+    async for token in call_llm_stream(
+        messages=history,
+        system_prompt=system_prompt,
+    ):
+        yield token
