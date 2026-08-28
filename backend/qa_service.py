@@ -108,6 +108,9 @@ async def rag_chat_stream(
     message: str,
     history: list[dict],
     top_k: int = 3,
+    model: str = None,
+    api_key: str = None,
+    api_base: str = None,
 ):
     """
     RAG 对话的流式版本。
@@ -147,5 +150,8 @@ async def rag_chat_stream(
     async for token in call_llm_stream(
         messages=history,
         system_prompt=system_prompt,
+        model=model,
+        api_key=api_key,
+        api_base=api_base,
     ):
         yield token

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, field_validator
+from typing import Optional
 import time
 from services import log_chat
 from dependencies import get_settings
@@ -13,12 +14,14 @@ from retrieve import retrieve_relevant_chunks_hybrid
 from llm import call_llm_with_tools
 from agent_service import ask_agent
 from qa_service import rag_chat_stream
+from providers import provider_store, ProviderConfig
 
 # ---------- 模型 ----------
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     session_id:str = Field(default="default")
     mood: str = Field(default="happy")
+    model: Optional[str] = None  # 指定模型名（前端选择）
 
     @field_validator("message")
     @classmethod
@@ -151,22 +154,33 @@ async def agent_endpoint(req:AgentRequest):
 # ---------- SSE 流式对话 ----------
 @app.post("/chat/rag/stream")
 async def chat_rag_stream(request: ChatRequest):
-    """SSE 流式 RAG 对话端点。返回 text/event-stream。"""
+    """SSE 流式 RAG 对话端点。支持动态选择模型。"""
     history = get_history(request.session_id)
     history_with_current = history + [{"role": "user", "content": request.message}]
 
+    # 解析模型供应商
+    api_key = None
+    api_base = None
+    model_name = request.model
+    if model_name:
+        result = provider_store.find_model(model_name)
+        if result:
+            provider, model_name = result
+            api_key = provider.api_key
+            api_base = provider.api_base
+
     async def event_generator():
         full_answer = ""
-        async for chunk in rag_chat_stream(request.message, history_with_current):
-            # 第一个 chunk 是 JSON 元数据，用特殊 event 类型发送
+        async for chunk in rag_chat_stream(
+            request.message, history_with_current,
+            model=model_name, api_key=api_key, api_base=api_base,
+        ):
             if chunk.startswith('{"type"'):
                 yield f"event: meta\ndata: {chunk}\n\n"
             else:
                 full_answer += chunk
                 yield f"data: {chunk}\n\n"
-        # 流结束后发送 done 事件
         yield "event: done\ndata: [DONE]\n\n"
-        # 存储到会话历史
         add_to_history(request.session_id, "user", request.message)
         add_to_history(request.session_id, "assistant", full_answer)
 
@@ -175,3 +189,77 @@ async def chat_rag_stream(request: ChatRequest):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ---------- 供应商管理 API ----------
+class ProviderCreateRequest(BaseModel):
+    name: str
+    api_base: str
+    api_key: str
+    models: list[str] = []
+    enabled: bool = True
+
+
+class ProviderUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    api_base: Optional[str] = None
+    api_key: Optional[str] = None
+    models: Optional[list[str]] = None
+    enabled: Optional[bool] = None
+
+
+@app.get("/providers")
+async def list_providers():
+    providers = provider_store.list_all()
+    # 返回时隐藏 api_key 中间部分
+    result = []
+    for p in providers:
+        d = p.model_dump()
+        key = d["api_key"]
+        if len(key) > 8:
+            d["api_key_masked"] = key[:4] + "***" + key[-4:]
+        else:
+            d["api_key_masked"] = "***"
+        d.pop("api_key")
+        result.append(d)
+    return {"providers": result}
+
+
+@app.get("/providers/full")
+async def list_providers_full():
+    """返回完整 api_key（前端设置页面编辑用）"""
+    return {"providers": [p.model_dump() for p in provider_store.list_all()]}
+
+
+@app.post("/providers")
+async def add_provider(req: ProviderCreateRequest):
+    config = ProviderConfig(**req.model_dump())
+    provider_store.add(config)
+    return {"status": "created", "provider": config.model_dump()}
+
+
+@app.put("/providers/{provider_id}")
+async def update_provider(provider_id: str, req: ProviderUpdateRequest):
+    data = {k: v for k, v in req.model_dump().items() if v is not None}
+    updated = provider_store.update(provider_id, data)
+    if not updated:
+        return {"status": "not_found"}
+    return {"status": "updated", "provider": updated.model_dump()}
+
+
+@app.delete("/providers/{provider_id}")
+async def delete_provider(provider_id: str):
+    ok = provider_store.delete(provider_id)
+    return {"status": "deleted" if ok else "not_found"}
+
+
+@app.get("/models")
+async def list_all_models():
+    """返回所有可用模型的扁平列表（供前端下拉选择）"""
+    models = []
+    for p in provider_store.list_all():
+        if not p.enabled:
+            continue
+        for m in p.models:
+            models.append({"model": m, "provider": p.name, "provider_id": p.id})
+    return {"models": models}
